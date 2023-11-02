@@ -1,0 +1,19 @@
+/*Add maincontact to accoun*/
+acrm = zoho.crm.getRecordById("Accounts",act_id.tolong());
+a_main_contact = acrm.getjson("Key_Contact");
+if(a_main_contact != null)
+{
+	contid = a_main_contact.get("id");
+	zcrm = zoho.crm.getRecordById("Contacts",contid.tolong());
+	info zcrm;
+	fn = zcrm.get("Full_Name");
+	updatemap = Map();
+	updatemap.put("Key_Contact",true);
+	updatecontact = zoho.crm.updateRecord("Contacts",contid.tolong(),updatemap,{"trigger":{"workflow","blueprint"}});
+	if(updatecontact.containKey("Modified_Time"))
+	{
+		notetext = fn + " - Contact (https://crm.zoho.com/crm/orgxxx/tab/Contacts/" + contid + ") has been updated - Key Contact to True";
+		notesMap = {"Parent_Id":act_id,"Note_Title":"Main Contact","Note_Content":notetext,"$se_module":"Accounts"};
+		responsenote = zoho.crm.createRecord("Notes",notesMap);
+	}
+}
