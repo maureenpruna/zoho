@@ -1,0 +1,347 @@
+sendmail
+[
+	from :zoho.adminuserid
+	to :"myemail@gmail.com"
+	subject :"Cognito Stream " + zoho.currenttime
+	message :crmAPIRequest
+]
+
+str = crmAPIRequest;
+bod = crmAPIRequest.getJSON("body");
+
+main_job_referen = ifnull(bod.get("JobReference"),"");
+main_job_address = ifnull(bod.get("JobAddress").get("Line1"),"");
+main_job_delmeth = ifnull(bod.get("DeliveryMethod"),"");
+main_job_company = ifnull(bod.get("Company"),"");
+main_job_cliname = ifnull(bod.get("Name"),"");
+main_job_clemail = ifnull(bod.get("EmailMeACopy"),"");
+main_job_reqtimx = ifnull(bod.getjson("Entry").get("Timestamp"),"");
+main_job_totroll = ifnull(bod.get("TotalRollers"),"");
+main_job_totcurt = ifnull(bod.get("TotalCurtains"),"");
+main_job_reqtimy = main_job_reqtimx.todateTime("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").addHour(10);
+main_job_reqtime = main_job_reqtimy.tostring("yyyy-MM-dd'T'HH:mm:ss+10:00");
+//Create New Folder
+new_dt = tostring(zoho.currentdate,'YYYYMMdd');
+formsub_folder = "ibxji9a96fcf163334115b3c6fc5a099a64b3";
+resp = zoho.workdrive.createFolder(new_dt + " " + main_job_referen,formsub_folder,"myconnection");
+if(!resp.get("data").isnull())
+{
+	qr_folderid = resp.get("data").get("id");
+	qr_permalink = resp.get("data").get("attributes").get("permalink");
+	if(qr_folderid != "" && qr_permalink != "")
+	{
+		info qr_folderid;
+		info qr_permalink;
+	}
+}
+mp_main = Map();
+mp_main.put("Job Reference",main_job_referen);
+mp_main.put("Job Address",main_job_address);
+mp_main.put("Delivery Method",main_job_delmeth);
+mp_main.put("Company",main_job_company);
+mp_main.put("Name",main_job_cliname);
+mp_main.put("Email",main_job_clemail);
+mp_main.put("Timestamp",main_job_reqtime);
+mp_main.put("Total Rollers",main_job_totroll);
+mp_main.put("Total Curtains",main_job_totcurt);
+newLine = hexToText("0A");
+if(main_job_totroll != "0.0")
+{
+	rollerlist = list();
+	rolreq = ifnull(bod.getjson("ROLLERREQUESTS"),"");
+	for each  rol in rolreq
+	{
+		rol_itemnum = ifnull(rol.get("ItemNumber"),"");
+		rol_roomnam = ifnull(rol.get("RoomName"),"");
+		rol_conttyp = ifnull(rol.get("ControlTypeCode"),"");
+		rol_braktyp = ifnull(rol.getjson("BracketType").get("Label"),"");
+		rol_fabrnam = ifnull(rol.get("FabricName"),rol.get("OtherFabric"));
+		rol_fabrcol = ifnull(rol.getjson("FabricColour").get("Label"),rol.get("OtherFabricColour"));
+		rol_widthmm = ifnull(rol.get("Width"),0);
+		rol_dropsmm = ifnull(rol.get("Drop"),0);
+		rol_contsid = ifnull(rol.getjson("ControlSide").get("Label"),"");
+		rol_brakfit = ifnull(rol.getjson("BracketFit").get("Label"),"");
+		rol_rolldir = ifnull(rol.getjson("RollDirection").get("Label"),"");
+		com = rol.getjson("CompSection");
+		//info "COM >>>>>> "+ com;
+		rol_bbarcol = ifnull(com.getjson("BottomBar"),"");
+		rol_bbumper = ifnull(com.getjson("BottomBarBumper").getjson("Label"),"");
+		rol_wndrcol = ifnull(com.getjson("WinderColour").getjson("Label"),"");
+		rol_chaicol = ifnull(com.getjson("ChainColour").getjson("Label"),"");
+		rol_brakcov = ifnull(com.getjson("BracketCover").getjson("Label"),"");
+		rol_chaisiz = ifnull(com.getjson("ChainSize"),"");
+		nat = rol.getjson("NotesSection");
+		rol_itemnot = ifnull(nat.get("Notes"),"");
+		rol_upfiles = "";
+		updr = nat.getjson("UploadFile");
+		rolfilelist = list();
+		rolfileremk = "";
+		ctr = 1;
+		for each  upd in updr
+		{
+			floc = upd.getjson("File");
+			rolno = if(len(rol_itemnum) == 1,"0" + rol_itemnum,rol_itemnum);
+			fnam = "Rol_" + rolno + "_0" + ctr + "_" + upd.getjson("Name");
+			fsiz = upd.getjson("Size").toLong();
+			if(fsiz > 4999999)
+			{
+				rolfilelist.add("Unable to Download file from " + floc);
+				rolfileremk = rolfileremk + "Unable to Download file from " + floc + " \r\n";
+			}
+			else
+			{
+				file_variable = invokeurl
+				[
+					url :floc
+					type :GET
+				];
+				curfileresp = zoho.workdrive.uploadFile(file_variable,qr_folderid,fnam,false,"myconnection");
+				info ">>>> zoho.workdrive.uploadFile >>>> ";
+				//info curfileresp;
+				if(!curfileresp.get("data").isnull())
+				{
+					ro_permalink = curfileresp.getjson("data").getjson("attributes").get("Permalink");
+					if(ro_permalink != "")
+					{
+						rolfilelist.add("FILE : " + ro_permalink);
+						rolfileremk = rolfileremk + "FILE : " + ro_permalink + " \r\n";
+					}
+					else
+					{
+						rolfilelist.add("Unable to Download file from " + floc);
+						rolfileremk = rolfileremk + "Unable to Download file from " + floc + " \r\n";
+					}
+				}
+				else
+				{
+					rolfilelist.add("Unable to Download file from " + floc);
+					rolfileremk = rolfileremk + "Unable to Download file from " + floc + " \r\n";
+				}
+			}
+		}
+		rol_upfiles = rolfileremk;
+		rol_map = Map();
+		rol_map.put("Blind No",rol_itemnum);
+		rol_map.put("Room Name",rol_roomnam);
+		rol_map.put("Control Type",rol_conttyp);
+		rol_map.put("Fabric",rol_fabrnam);
+		rol_map.put("Fabric Colour",rol_fabrcol);
+		rol_map.put("Width mm",rol_widthmm);
+		rol_map.put("Drop mm",rol_dropsmm);
+		rol_map.put("Control Side",rol_contsid);
+		rol_map.put("Bracket Fit",rol_brakfit);
+		rol_map.put("Roll Direction",rol_rolldir);
+		rol_map.put("Bracket Type",rol_braktyp);
+		rol_map.put("Winder Colour",rol_wndrcol);
+		rol_map.put("Chain Colour",rol_chaicol);
+		rol_map.put("Bottom Bar",rol_bbarcol);
+		rol_map.put("Bracket Cover",rol_brakcov);
+		rol_map.put("Bottom Bar Bumper",rol_bbumper);
+		rol_map.put("Custom Chain Size",rol_chaisiz);
+		rol_map.put("Chain Length",rol_chaisiz);
+		rol_map.put("Factory Notes",rol_itemnot);
+		rol_map.put("Install Notes",rol_itemnot);
+		rol_map.put("Uploaded Files",rolfileremk);
+		rollerlist.add(rol_map);
+	}
+}
+if(main_job_totcurt != "0.0")
+{
+	curreq = ifnull(bod.getjson("CURTAINREQUEST"),"");
+	curtainlist = list();
+	for each  cur in curreq
+	{
+		cur_itemnum = ifnull(cur.get("ItemNumber"),"");
+		cur_roomnam = ifnull(cur.get("RoomName"),"");
+		cur_curttyp = ifnull(cur.get("CurtainType"),"");
+		cur_fabrnam = ifnull(cur.get("FabricName"),cur.get("OtherFabricName"));
+		cur_fabrcol = ifnull(cur.getjson("FabricColour").getjson("Label"),cur.get("OtherFabricColour"));
+		cur_widthmm = ifnull(cur.get("Width"),"");
+		cur_dropsmm = ifnull(cur.get("Drop"),"");
+		cur_linings = ifnull(cur.getjson("Lining").getjson("Label"),"");
+		cur_flkstck = ifnull(cur.getjson("FlickStick").getjson("Label"),"");
+		cur_bothhem = ifnull(cur.getjson("BottomHem").getjson("Label"),"");
+		cur_cttrack = ifnull(cur.getjson("Track").getjson("Label"),"");
+		cur_opening = ifnull(cur.getjson("Opening").getjson("Label"),"");
+		cur_braktyp = ifnull(cur.getjson("BracketType").getjson("Label"),"");
+		cur_trakcol = ifnull(cur.getjson("TrackColour").getjson("Label"),"");
+		cur_motside = ifnull(cur.getjson("MotorSide").getjson("Label"),"");
+		cur_pletcov = ifnull(cur.getjson("PleatCover").getjson("Label"),"");
+		cur_finltyp = ifnull(cur.getjson("FinialType").getjson("Label"),"");
+		cur_return = ifnull(cur.getjson("Return").getjson("Label"),"");
+		ben = ifnull(cur.getjson("BendChoices"),"");
+		cur_bendcnt = 0;
+		cur_curbend = ifnull(ben.get("Bend"),"");
+		cur_width01 = ifnull(ben.get("_1Width"),"");
+		cur_angle01 = ifnull(ben.get("_1Angle"),"");
+		cur_width02 = ifnull(ben.get("_2Width"),"");
+		cur_angle02 = ifnull(ben.get("_2Angle"),"");
+		cur_width03 = ifnull(ben.get("_3Width"),"");
+		cur_angle03 = ifnull(ben.get("_3Angle"),"");
+		cur_width04 = ifnull(ben.get("_4Width"),"");
+		cur_angle04 = ifnull(ben.get("_4Angle"),"");
+		cur_width05 = ifnull(ben.get("_5Width"),"");
+		cur_towidth = if(cur_width01 != "",cur_width01.toNumber(),0) + if(cur_width02 != "",cur_width02.toNumber(),0) + if(cur_width03 != "",cur_width03.toNumber(),0) + if(cur_width04 != "",cur_width04.toNumber(),0) + if(cur_width05 != "",cur_width05.toNumber(),0);
+		cur_bendcnt = if(cur_width01 != "",1,0) + if(cur_width02 != "",1,0) + if(cur_width03 != "",1,0) + if(cur_width04 != "",1,0) + if(cur_width05 != "",1,0);
+		nut = ifnull(cur.getjson("NotesSection"),"");
+		cur_itemnot = ifnull(nut.get("Notes"),"");
+		updc = nut.getjson("UploadFile");
+		curfilelist = list();
+		curfileremk = "";
+		ctr = 1;
+		for each  upd in updc
+		{
+			floc = upd.getjson("File");
+			curno = if(len(cur_itemnum) == 1,"0" + cur_itemnum,cur_itemnum);
+			fnam = "Cur_" + curno + "_0" + ctr + "_" + upd.getjson("Name");
+			fsiz = upd.getjson("Size").toLong();
+			if(fsiz > 4999999)
+			{
+				curfilelist.add("Unable to Download file from " + floc);
+				curfileremk = curfileremk + "Unable to Download file from " + floc + " \r\n";
+			}
+			else
+			{
+				file_variable = invokeurl
+				[
+					url :floc
+					type :GET
+				];
+				curfileresp = zoho.workdrive.uploadFile(file_variable,qr_folderid,fnam,false,"myconnection");
+				//info ">>>> zoho.workdrive.uploadFile >>>> ";
+				//info curfileresp;
+				if(!curfileresp.getjson("data").isnull())
+				{
+					cu_permalink = curfileresp.getjson("data").getjson("attributes").get("Permalink");
+					if(cu_permalink != "")
+					{
+						curfilelist.add("FILE : " + cu_permalink);
+						curfileremk = curfileremk + "FILE : " + cu_permalink + " \r\n";
+					}
+					else
+					{
+						curfilelist.add("Unable to Download file from " + floc);
+						curfileremk = curfileremk + "Unable to Download file from " + floc + " \r\n";
+					}
+				}
+				else
+				{
+					curfilelist.add("Unable to Download file from " + floc);
+					curfileremk = curfileremk + "Unable to Download file from " + floc + " \r\n";
+				}
+			}
+		}
+		cur_map = Map();
+		cur_map.put("Curtain No",cur_itemnum);
+		cur_map.put("Room Name",cur_roomnam);
+		cur_map.put("Curtain Type",cur_curttyp);
+		cur_map.put("Track",cur_cttrack);
+		cur_map.put("Fabric",cur_fabrnam);
+		cur_map.put("Fabric Colour",cur_fabrcol);
+		cur_map.put("Width mm",cur_widthmm);
+		cur_map.put("Drop mm",cur_dropsmm);
+		cur_map.put("Opening",cur_opening);
+		cur_map.put("Bracket Type",cur_braktyp);
+		cur_map.put("Motor Side",cur_motside);
+		cur_map.put("Pleat Cover",cur_pletcov);
+		cur_map.put("Finial Type",cur_finltyp);
+		cur_map.put("Lining",cur_linings);
+		cur_map.put("Return",cur_return);
+		cur_map.put("Track Colour",cur_trakcol);
+		cur_map.put("Flick Stick",cur_flkstck);
+		cur_map.put("Bottom Hem",cur_bothhem);
+		cur_map.put("Factory Notes",cur_itemnot);
+		cur_map.put("Install Notes",cur_itemnot);
+		cur_map.put("Unit Price","");
+		cur_map.put("Track Join","");
+		cur_map.put("Fabric Join","");
+		cur_map.put("Bend",cur_curbend);
+		cur_map.put("Bend Width Total mm",cur_towidth);
+		cur_map.put("Bend Qty",cur_bendcnt);
+		cur_map.put("1 Width",cur_width01);
+		cur_map.put("1 Angle",cur_angle01);
+		cur_map.put("2 Width",cur_width02);
+		cur_map.put("2 Angle",cur_angle02);
+		cur_map.put("3 Width",cur_width03);
+		cur_map.put("3 Angle",cur_angle03);
+		cur_map.put("4 Width",cur_width04);
+		cur_map.put("4 Angle",cur_angle04);
+		cur_map.put("5 Width",cur_width05);
+		cur_map.put("Uploaded Files",curfileremk);
+		curtainlist.add(cur_map);
+	}
+}
+template_resourceid = "rinr625e2fb3a5485472e98e7a39c769967bf";
+resp = zoho.sheet.getSheets(template_resourceid,"myconnection");
+url = "https://www.zohoapis.com.au/workdrive/api/v1/files/" + qr_folderid + "/copy";
+attributeMap = Map();
+attributeMap.put("resource_id",template_resourceid);
+attributeMap.put("name",main_job_referen);
+payLoad = Map();
+payLoad.put("attributes",attributeMap);
+payLoad.put("type","files");
+params = Map();
+params.put("data",payLoad);
+headersMap = Map();
+headersMap.put("Accept","application/vnd.api+json");
+resp = invokeurl
+[
+	url :url
+	type :POST
+	parameters:params.toString()
+	headers:headersMap
+	connection:"myconnection"
+];
+info resp;
+if(!resp.get("data").isnull())
+{
+	new_file_id = resp.get("data").get("id");
+	new_file_permalink = resp.get("data").get("attributes").get("permalink");
+	if(new_file_id != "" && new_file_permalink != "")
+	{
+		info new_file_id;
+		info new_file_permalink;
+	}
+}
+response = zoho.sheet.getSheets(new_file_id,"myconnection");
+info response;
+ws = response.get("worksheet_names");
+sheet0 = ws.get(0).get("worksheet_name");
+sheet1 = ws.get(1).get("worksheet_name");
+sheet2 = ws.get(2).get("worksheet_name");
+sheet3 = ws.get(3).get("worksheet_name");
+queryData = Map();
+mainheader = {"Job Reference","Job Address","Delivery Method","Company","Name","Email","Timestamp","Total Rollers","Total Curtains"};
+mainlist = list();
+mainlist.add(mp_main);
+create_sheet1 = zoho.sheet.insertCSV(new_file_id,sheet1,mainheader,1,1,"myconnection");
+insert_sheet1 = zoho.sheet.createRecords(new_file_id,sheet1,mainlist,queryData,"myconnection");
+//info "insert_sheet1 >>> " + insert_sheet1;
+rollheader = {"Blind No","Room Name","Control Type","Fabric","Fabric Colour","Width mm","Drop mm","Control Side","Bracket Fit","Roll Direction","Bracket Type","Winder Colour","Chain Colour","Bottom Bar","Bracket Cover","Bottom Bar Bumper","Custom Chain Size","Chain Length","Factory Notes","Install Notes","Uploaded Files"};
+create_sheet2 = zoho.sheet.insertCSV(new_file_id,sheet2,rollheader,1,1,"myconnection");
+//info create_sheet2;
+insert_sheet2 = zoho.sheet.createRecords(new_file_id,sheet2,rollerlist,queryData,"myconnection");
+//info "insert_sheet2 >>> " + insert_sheet2;
+curtainheader = {"Curtain No","Room Name","Curtain Type","Track","Fabric","Fabric Colour","Width mm","Drop mm","Opening","Bracket Type","Motor Side","Pleat Cover","Finial Type","Lining","Return","Track Colour","Flick Stick","Bottom Hem","Factory Notes","Install Notes","Unit Price","Track Join","Fabric Join","Bend","Bend Width Total mm","Bend Qty","1 Width","1 Angle","2 Width","2 Angle","3 Width","3 Angle","4 Width","4 Angle","5 Width","Uploaded Files"};
+create_sheet3 = zoho.sheet.insertCSV(new_file_id,sheet3,curtainheader,1,1,"myconnection");
+//info create_sheet3;
+insert_sheet3 = zoho.sheet.createRecords(new_file_id,sheet3,curtainlist,queryData,"myconnection");
+//info "insert_sheet3 >>> " + insert_sheet3;
+Embody = "We have received a quote request from " + main_job_cliname + "<br><br>";
+Embody = Embody + "Date Received : " + main_job_reqtimy.tostring("dd MMM yyyy hh:mm a") + "<br>";
+Embody = Embody + "Job Address : " + main_job_address + "<br>";
+Embody = Embody + "Delivery Method : " + main_job_delmeth + "<br>";
+Embody = Embody + "Company : " + main_job_company + "<br>";
+Embody = Embody + "Email : " + main_job_clemail + "<br>";
+Embody = Embody + "Products : Rollers(" + main_job_totroll.tonumber() + ") Curtains (" + main_job_totcurt.tonumber() + ")<br><br>";
+Embody = Embody + "Zoho Workdrive File : " + qr_permalink + "<br>";
+Embody = Embody + "Zoho Sheet Summary : " + new_file_permalink + "<br><br><br>";
+Embody = Embody + "* This is a system generated email from Zoho. Have a great day!";
+sendmail
+[
+	from :zoho.adminuserid
+	to :"myemailgmail.com"
+	subject :"Quote Request | " + main_job_referen
+	message :Embody
+]
+return "";
