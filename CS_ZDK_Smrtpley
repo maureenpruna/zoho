@@ -1,0 +1,30 @@
+if (field_name == "Lead") {
+    var form = ZDK.Page.getForm().getValues();
+    var leadId = form.Lead.id;
+    var lead = ZDK.Apps.CRM.Leads.fetchById(leadId);
+    log(lead);
+
+    var Account_Name = ZDK.Page.getField('Account_Name');
+    Account_Name.setValue(lead.Company);
+    var Industry = ZDK.Page.getField('Industry');
+    Industry.setValue(lead.Industry);
+    var Phone = ZDK.Page.getField('Phone');
+    Phone.setValue(lead.Phone);
+    var Email = ZDK.Page.getField('Email');
+    Email.setValue(lead.Email);
+    var Website = ZDK.Page.getField('Website');
+    Website.setValue(lead.Website);
+    var Shipping_Street = ZDK.Page.getField('Shipping_Street');
+    Shipping_Street.setValue(lead.Street);
+    var Shipping_State = ZDK.Page.getField('Shipping_State');
+    Shipping_State.setValue(lead.State); // Field name = Shipping Suburb , Api Name = Shipping_State 
+    var Shipping_City = ZDK.Page.getField('Shipping_City');
+    Shipping_City.setValue(lead.City);
+    var Shipping_Code = ZDK.Page.getField('Shipping_Code');
+    Shipping_Code.setValue(lead.Zip_Code);
+    var Shipping_Country = ZDK.Page.getField('Shipping_Country');
+    Shipping_Country.setValue(lead.Country);
+    var Description = ZDK.Page.getField('Description');
+    Description.setValue(lead.Description);
+    
+}
