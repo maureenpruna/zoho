@@ -1,0 +1,58 @@
+biglist = list();
+biglist = {"11263000000134581"};
+for each  rec in biglist
+{
+	contid = rec;
+	relatedrecords = zoho.crm.getRelatedRecords("Attachments","Contacts",contid.tolong());
+	attachid = List();
+	li = List();
+	for each  ele in relatedrecords
+	{
+		attachementId = ele.get("id");
+		attachid.add(attachementId);
+	}
+	for each  ele in attachid
+	{
+		downloadFile = invokeurl
+		[
+			url :"https://www.zohoapis.com.au/crm/v3/Contacts/" + contid + "/Attachments/" + ele
+			type :GET
+			connection:"myconnection"
+		];
+		info contid + " - DownloadFile is >> " + downloadFile;
+		Cont_folder = "54clwcd9bf47492de4200bf6aba851f84e407";		
+		response = zoho.workdrive.uploadFile(downloadFile,Cont_folder,downloadFile,false,"myconnection");
+		
+		permalink = "";
+		fn = "";
+		if(response.containKey("data"))
+		{
+			data_attrib = response.getjson("data").get(0).get("attributes");
+			//info data_attrib;
+			if(data_attrib.containKey("Permalink"))
+			{
+				permalink = data_attrib.get("Permalink");
+				fn = data_attrib.get("FileName");
+			}
+		}
+		else
+		{
+			info "ERRRRORRRR : " + contid;
+		}
+		new_file_id = "54clw78844ad47a154da08d89066f5ae7181b";
+		responsesheet = zoho.sheet.getSheets(new_file_id,"myconnection");
+	
+		queryData = Map();
+		mainlist = list();
+		mainmp = Map();
+		mainmp.put("Timestamp",zoho.currenttime);
+		mainmp.put("Module","Contacts");
+		mainmp.put("Module ID",contid);
+		mainmp.put("Filename",fn);
+		mainmp.put("Permalink",permalink);
+		mainlist.add(mainmp);
+		headerdata = zoho.sheet.createRecords(new_file_id,"Sheet2",mainlist,queryData,"myconnection");
+		info headerdata;
+	}
+}
+return "Done";
