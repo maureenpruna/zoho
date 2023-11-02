@@ -1,0 +1,60 @@
+ctrlist = list();
+ctrlist = {1,2,3,4,5,6,7,8};
+for each  rec in ctrlist
+{
+	access_token = zoho.crm.getOrgVariable('qb_accesstoken');
+	realmId = zoho.crm.getOrgVariable('qb_realmid');
+	info access_token;
+	info realmId;
+	sheetname0 = "Sheet" + rec.toString();
+	startx = rec * 500 - 500 + 1;
+	if(access_token != "")
+	{
+		new_head = Map();
+		new_head.put("Authorization","Bearer " + access_token);
+		new_head.put("Content-Type","text/plain");
+		new_head.put("Accept","application/json");
+		sql = "select * from Customer STARTPOSITION " + startx + " MAXRESULTS 500";
+		sqr = encodeUrl(sql);
+		get_data = invokeurl
+		[
+			url :"https://QuickBooks.API.intuit.com/v3/company/" + realmId + "/query?query=" + sqr + "&minorversion=65"
+			type :GET
+			headers:new_head
+		];
+	}
+	itemdata = get_data.getjson("QueryResponse").getjson("Customer");
+	rowsData = list();
+	for each  rec in itemdata
+	{
+		ldmap = Map();
+		ldmap.put("Id",rec.get("Id"));
+		ldmap.put("DisplayName",ifnull(rec.get("DisplayName"),""));
+		ldmap.put("CompanyName",ifnull(rec.get("CompanyName"),""));
+		ldmap.put("PrimaryPhone",if(rec.get("PrimaryPhone") == null,"",rec.getjson("PrimaryPhone").get("FreeFormNumber")));
+		ldmap.put("PrimaryEmailAddr",if(rec.get("PrimaryEmailAddr") == null,"",rec.getjson("PrimaryEmailAddr").get("Address")));
+		rowsData.add(ldmap);
+	}
+	if(!rowsData.isempty())
+	{
+		resourceid = "xnqpf712ea232d9c049d6957a2099e3bfba5e";
+		response = zoho.sheet.getSheets(resourceid,"myconnection");
+		ws = response.get("worksheet_names");
+		//sheetname0 = "Sheet1";
+		queryData_null = Map();
+		queryData_null.put("criteria","\"Id\"!=\"Id\"");
+		queryData_null.put("start_index","1");
+		emptymap = Map();
+		emptymap.put("Id","");
+		emptymap.put("DisplayName","");
+		emptymap.put("CompanyName","");
+		emptymap.put("PrimaryPhone","");
+		emptymap.put("PrimaryEmailAddr","");
+		resp_update_tonull_0 = zoho.sheet.updateRecords(resourceid,sheetname0,"",emptymap,queryData_null,"myconnection");
+		queryData = Map();
+		create_resp = zoho.sheet.insertCSV(resourceid,sheetname0,"Id,DisplayName,CompanyName,PrimaryPhone,PrimaryEmailAddr",1,1,"myconnection");
+		resp_insert_cats = zoho.sheet.createRecords(resourceid,sheetname0,rowsData,queryData,"myconnection");
+		info "resp_insert_cats";
+		info resp_insert_cats;
+	}
+}
