@@ -1,0 +1,185 @@
+
+
+var stageText = "";
+var colonIndex = value.indexOf(':');
+
+if (colonIndex !== -1) {
+  stageText = value.substring(colonIndex + 1).trim();  
+  //ZDK.Client.showAlert("The old value is " + ZDK.Page.getField("Stage").getValue());
+  //ZDK.Client.showAlert(" The new value is " + stageText); 
+}
+if (stageText !== "")
+{
+  var delmeth = ZDK.Page.getField('Type').getValue();
+  
+  var roll_bool = ZDK.Page.getField('Roller').getValue() ? 1 : 0;  
+  var curt_bool = ZDK.Page.getField('Curtain').getValue() ? 1 : 0;
+  var trck_bool = ZDK.Page.getField('Track').getValue() ? 1 : 0;
+  var part_bool = ZDK.Page.getField('Parts').getValue() ? 1 : 0;
+
+  var roll_stg = ZDK.Page.getField('Roller_Stage').getValue() !== null ?  ZDK.Page.getField('Roller_Stage').getValue() : "";
+  var curt_stg = ZDK.Page.getField('Curtain_Stage').getValue() !== null ? ZDK.Page.getField('Curtain_Stage').getValue() : "";
+  var trck_stg = ZDK.Page.getField('Track_Stage').getValue() !== null ? ZDK.Page.getField('Track_Stage').getValue() : "";
+  var part_stg = ZDK.Page.getField('Parts_Stage').getValue() !== null ? ZDK.Page.getField('Parts_Stage').getValue() : "";
+
+  
+
+  ZDK.Client.showAlert("roll_stg " + String(roll_stg));
+  ZDK.Client.showAlert("curt_stg " +  String(curt_stg));
+  ZDK.Client.showAlert("part_stg " + String(part_stg));
+  ZDK.Client.showAlert("trck_bool " + String(trck_bool));
+
+ 
+  var roll_done = (roll_bool === 1) && (roll_stg === "Done" || roll_stg === "Redo Done") ? 1 : 0;
+  var curt_done = (roll_bool === 1) && (curt_stg === "Done" || roll_stg === "Redo Done") ? 1 : 0;
+  var trck_done = (roll_bool === 1) && (trck_stg === "Done" || roll_stg === "Redo Done") ? 1 : 0;
+  var part_done = (roll_bool === 1) && (part_stg === "Done" || roll_stg === "Redo Done") ? 1 : 0;
+
+  var roll_out = roll_bool === 1 && roll_stg === "Out" ? 1 : 0;
+  var curt_out = roll_bool === 1 && curt_stg === "Out" ? 1 : 0;
+  var trck_out = roll_bool === 1 && trck_stg === "Out" ? 1 : 0;
+  var part_out = roll_bool === 1 && part_stg === "Out" ? 1 : 0;
+ 
+  var roll_redo = roll_bool === 1 && roll_stg.indexOf('Redo') !== -1 ? 1 : 0;
+  var curt_redo = roll_bool === 1 && roll_stg.indexOf('Redo') !== -1 ? 1 : 0;
+  var trck_redo = roll_bool === 1 && roll_stg.indexOf('Redo') !== -1 ? 1 : 0;
+  var part_redo = roll_bool === 1 && roll_stg.indexOf('Redo') !== -1 ? 1 : 0;
+
+  var roll_redonew = roll_bool === 1 && roll_stg === "Redo New" ? 1 : 0;
+  var curt_redonew = roll_bool === 1 && curt_stg === "Redo New" ? 1 : 0;
+  var trck_redonew = roll_bool === 1 && trck_stg === "Redo New" ? 1 : 0;
+  var part_redonew = roll_bool === 1 && part_stg === "Redo New" ? 1 : 0;
+
+  var factory_all_done = 0;
+  var factory_all_out = 0;
+  var irr_donelist = ["Done","Out","Redo New","Redo Done"];
+  var irr_redolist = ["Out", "Redo New", "Redo Done"];
+  var prod_count = 0;
+  var done_count = 0;
+  var out_count = 0;
+  var redo_count = 0;
+  var redonew_count = 0;
+  var irr_done_count = 0;
+  var irr_redo_count = 0;
+
+  prod_count = roll_bool + curt_bool + trck_bool + part_bool;
+  done_count = roll_done + curt_done + trck_done + part_done;
+  out_count = roll_out + curt_out + trck_out + part_out;
+  redonew_count = roll_redonew + curt_redonew + trck_redonew + part_redonew;
+
+  if ((done_count == prod_count) && (prod_count > 0))
+  {
+    factory_all_done = 1;
+  }
+  if(out_count == prod_count && prod_count > 0)
+  {
+    factory_all_out = 1;
+  }
+
+  ZDK.Client.showAlert(String(prod_count));
+  if (stageText == "CM Booked (Paid)") {
+    if (delmeth !== "CM Install") {
+      ZDK.Client.showAlert("CM Booked (Paid) only applies to CM Install");
+      return false;
+    }
+  }
+  else if (stageText == "Redo Booked")
+  {
+    if (redonew_count == 0)
+    {
+      ZDK.Client.showAlert("At least one associated factory record must be Redo New to proceed");
+      return false;
+     }
+    
+  }
+  else if(stageText == "Job Complete")
+  {
+    if (prod_count > 0)
+    {
+      ZDK.Client.showAlert("Atleast one associated factory record is required to proceed");
+      return false;
+    }
+		else if(factory_all_out == 0)
+		{			
+      ZDK.Client.showAlert("All associated factory record must be Out to proceed");
+      return false;
+		}
+  }
+  else if(stageText == "Install Booked")
+  {
+    if (delmeth !== "CM Install")
+    {
+      ZDK.Client.showAlert("Install Booked only applies to CM Install");
+      return false;
+    }
+		else 
+    {
+      if(done_count == 0)
+			{
+				ZDK.Client.showAlert("Atleast one factory record must be Done to proceed");
+        return false;
+			}
+			else
+			{
+				if((done_count + out_count)<prod_count)
+				{
+          ZDK.Client.showAlert("Some stage not qualified to proceed (Accepted : Out/Done/Redo Done)");
+          return false;
+				}
+			}  	
+      ZDK.Client.showAlert("All associated factory record must be Out to proceed");
+      return false;
+		}
+  }
+  else if(stageText == "Delivery Booked")
+	{
+		if(delmeth != "Deliver")
+		{
+			ZDK.Client.showAlert("Delivery Booked only applies to Deliver");
+      return false;
+		}
+		else
+		{
+		  if(done_count == 0)
+			{
+				ZDK.Client.showAlert("Atleast one factory record must be Done to proceed");
+        return false;
+			}
+			else
+			{
+				if((done_count + out_count)<prod_count)
+				{
+          ZDK.Client.showAlert("Some stage not qualified to proceed (Accepted : Out/Done/Redo Done)");
+          return false;
+				}
+			}
+		}
+  }
+  else if(stageText == "Pick Up Booked")
+	{
+		if(delmeth != "Pick Up")
+		{
+      ZDK.Client.showAlert("Pick Up Booked only applies to Pick Up");
+      return false;
+		}
+		else
+    {      
+		  if(done_count == 0)
+			{
+				ZDK.Client.showAlert("Atleast one factory record must be Done to proceed");
+        return false;
+			}
+			else
+			{
+				if((done_count + out_count)<prod_count)
+				{
+          ZDK.Client.showAlert("Some stage not qualified to proceed (Accepted : Out/Done/Redo Done)");
+          return false;
+				}
+			}
+		}
+	}
+}
+
+   
+
