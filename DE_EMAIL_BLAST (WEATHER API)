@@ -1,0 +1,65 @@
+header_data = Map();
+header_data.put("Content-Type","application/json");
+currentDate = zoho.currentdate;
+daynum = currentDate.getDayOfWeek();
+info daynum;
+if(daynum == 1 || daynum == 4)
+{
+	access_key = "7A***";
+}
+else if(daynum == 2 || daynum == 5)
+{
+	access_key = "7f**";
+}
+else if(daynum == 3 || daynum == 6)
+{
+	access_key = "71***";
+}
+else
+{
+	rnum = randomNumber(0,5);
+	accl = List();
+	accl.add("7A***");
+	accl.add("7f**");
+	accl.add("71**");
+	accl.add("7A***");
+	accl.add("7f**");
+	accl.add("71**");
+	access_key = accl.get(rnum);
+}
+urlstr = "http://api.exchangerate.host/live?access_key={YOUAPIKEY}";
+// +access_key;
+testik = invokeurl
+[
+	url :urlstr
+	type :GET
+	headers:header_data
+];
+info testik;
+info "our chosen key is" + access_key;
+text = access_key;
+lastFiveDigits = "*****" + text.substring(text.length() - 5);
+info lastFiveDigits;
+ratetext = "";
+ratetext = testik.getjson("quotes").toString();
+ratetext = substring(ratetext,1,ratetext.length() - 1);
+ratetext = replaceall(ratetext,"\"","");
+ratetext = replaceall(ratetext,"\"","");
+ratelist = List();
+ratelist = ratetext.toList(",");
+mau_test = zoho.crm.getOrgVariable('mautestblast');
+for each  rec in ratelist
+{
+	pref = rec.getPrefix(":");
+	recx = replaceall(rec,":"," : ");
+	info pref + " " + recx;
+	msg = "This is an email blast courtesy of MPTech. Please Add to your contacts. <br><br>";
+	msg = msg + "The Key used to gerenerate rates is " + lastFiveDigits + "<br>";
+	sendmail
+	[
+		from :zoho.adminuserid
+		to :mau_test
+		subject :"Exchange Rate (" + pref + ") as of " + zoho.currenttime
+		message :msg + recx + " in USD.<br>Thank you!"
+	]
+}
