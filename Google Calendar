@@ -1,0 +1,469 @@
+dealid = tostring(dealidint);
+//dealid = "14699000007162890";
+//deal_field = "Booked";
+task_resp = zoho.crm.getRelatedRecords("Events","Deals",dealid.tolong());
+//info task_resp;
+job_resp = zoho.crm.getRecordById("Deals",dealid.tolong());
+Job_Code = ifnull(job_resp.get("Deal_Name"),"");
+Cont_id = job_resp.getjson("Contact_Name").get("id");
+cont_resp = zoho.crm.getRecordById("Contacts",Cont_id.tolong());
+Delivery_Method = ifnull(job_resp.get("Type"),"");
+Customer_Type = ifnull(job_resp.get("Customer_Type"),"");
+Company = if(job_resp.get("Account_Name") != null,job_resp.get("Account_Name").get("name"),"");
+Company_Code = ifnull(job_resp.get("Company_Code"),"");
+Customer = job_resp.get("Contact_Name").get("name");
+Customer_Mobile = ifnull(job_resp.get("Customer_Mobile"),"");
+Customer_Email = ifnull(job_resp.get("Customer_Email"),"");
+Job_Address_Details = ifnull(job_resp.get("Job_Address_Details"),"");
+Job_Address = ifnull(job_resp.get("Job_Address"),"");
+Job_State = ifnull(job_resp.get("Job_State"),"");
+Job_Postcode = ifnull(job_resp.get("Job_Postcode"),"");
+Contact_Address = ifnull(cont_resp.getjson("Mailing_Street"),"");
+Contact_State = ifnull(cont_resp.getjson("Mailing_State"),"");
+Contact_Postcode = ifnull(cont_resp.getjson("Mailing_Zip"),"");
+Stage = job_resp.get("Stage");
+Invoice_No = ifnull(job_resp.get("Invoice_No"),"");
+Job_No = ifnull(job_resp.get("Job_No"),"");
+Order_No = ifnull(job_resp.get("Order_No"),"");
+Description = ifnull(job_resp.get("Description"),"");
+Booked_with_Customer = ifnull(job_resp.get("Booked_with_Customer"),"");
+Manufacture_Start_Date = if(job_resp.get("Production_Date") != NULL,toDate(job_resp.get("Production_Date"),"yyyy-MM-dd").toString("dd-MM-YYYY"),"");
+p_order_date = if(job_resp.get("Parts_Order_Date") != NULL,toDate(job_resp.get("Parts_Order_Date"),"yyyy-MM-dd").toString("dd-MM-YYYY"),"");
+t_start_date = if(job_resp.get("Track_Start_Date") != NULL,toDate(job_resp.get("Track_Start_Date"),"yyyy-MM-dd").toString("dd-MM-YYYY"),"");
+r_start_date = if(job_resp.get("Roller_Start_Date") != NULL,toDate(job_resp.get("Roller_Start_Date"),"yyyy-MM-dd").toString("dd-MM-YYYY"),"");
+c_start_date = if(job_resp.get("Curtain_Start_Date") != NULL,toDate(job_resp.get("Curtain_Start_Date"),"yyyy-MM-dd").toString("dd-MM-YYYY"),"");
+// 
+// CM INSTALL
+Take_Photos = ifnull(job_resp.get("Take_Photos"),"");
+Remove_Blinds = ifnull(job_resp.get("Remove"),"");
+Tools = ifnull(job_resp.get("Tools"),"");
+// 
+// ACCESS
+Access = ifnull(job_resp.get("Access"),"");
+Access_Name = ifnull(job_resp.get("Access_Name"),"");
+Access_Mobile = ifnull(job_resp.get("Access_Mobile"),"");
+Key_Location = ifnull(job_resp.get("Key_Location"),"");
+// 
+// BOOKED DATE TIME
+Manufacture_Booked = ifnull(job_resp.get("Calendar_Date_Time"),"");
+Redo_Booked = ifnull(job_resp.get("Redo_Booked"),"");
+// 
+// FACTORY STAGE
+// ROLLER
+Roller = ifnull(job_resp.get("Roller"),"");
+Roller_Redo_Reason = ifnull(job_resp.get("Roller_Redo_Reason"),"");
+Roller_Redo_Description = ifnull(job_resp.get("Roller_Redo_Description"),"");
+Roller_Notes = ifnull(job_resp.get("Roller_Notes"),"");
+Roller_Stage = ifnull(job_resp.get("Roller_Stage"),"");
+Roller_Link = job_resp.getjson("Roller_Link");
+// CURTAIN
+Curtain = ifnull(job_resp.get("Curtain"),"");
+Curtain_Redo_Reason = ifnull(job_resp.get("Curtain_Redo_Reason"),"");
+Curtain_Redo_Description = ifnull(job_resp.get("Curtain_Redo_Description"),"");
+Curtain_Notes = ifnull(job_resp.get("Curtain_Notes"),"");
+Curtain_Stage = ifnull(job_resp.get("Curtain_Stage"),"");
+Curtain_Link = job_resp.getjson("Curtain_Link");
+// PART
+Parts = ifnull(job_resp.get("Parts"),"");
+Parts_Redo_Reason = ifnull(job_resp.get("Parts_Redo_Reason"),"");
+Parts_Redo_Description = ifnull(job_resp.get("Parts_Redo_Description"),"");
+Parts_Notes = ifnull(job_resp.get("Parts_Notes"),"");
+Parts_Stage = ifnull(job_resp.get("Parts_Stage"),"");
+Parts_Link = job_resp.getjson("Parts_Link");
+// TRACK
+Track = ifnull(job_resp.get("Track"),"");
+Track_Redo_Reason = ifnull(job_resp.get("Track_Redo_Reason"),"");
+Track_Redo_Description = ifnull(job_resp.get("Track_Redo_Description"),"");
+Track_Notes = ifnull(job_resp.get("Track_Notes"),"");
+Track_Stage = ifnull(job_resp.get("Track_Stage"),"");
+Track_Link = job_resp.getjson("Track_Link");
+// 
+// SHORTCUTS
+r_count = null;
+c_count = null;
+p_count = null;
+t_count = null;
+if(job_resp.getjson("Roller") == true && job_resp.getjson("Roller_Link") != null)
+{
+	rol_id = job_resp.getjson("Roller_Link").subString(job_resp.getjson("Roller_Link").lastIndexOf("/") + 1,job_resp.getjson("Roller_Link").length());
+	rol_crm = zoho.crm.getRecordById("Factory_Rollers",rol_id.tolong());
+	r_count = rol_crm.getjson("Roller_Count");
+	r_stg1 = ifnull(rol_crm.getjson("Roller_Stage"),"");
+	if(r_stg1 = "New")
+	{
+		r_stg2 = "NE";
+	}
+	else if(r_stg1 = "Ordered")
+	{
+		r_stg2 = "OR";
+	}
+	else if(r_stg1 = "Back Order")
+	{
+		r_stg2 = "BO";
+	}
+	else if(r_stg1 = "Wait CM")
+	{
+		r_stg2 = "CM";
+	}
+	else if(r_stg1 = "Fabric Ready")
+	{
+		r_stg2 = "FR";
+	}
+	else if(r_stg1 = "Started")
+	{
+		r_stg2 = "ST";
+	}
+	else if(r_stg1 = "Done")
+	{
+		r_stg2 = "DO";
+	}
+	else if(r_stg1 = "Out")
+	{
+		r_stg2 = "OU";
+	}
+	else
+	{
+		r_stg2 = "";
+	}
+}
+if(job_resp.getjson("Curtain") == true && job_resp.getjson("Curtain_Link") != null)
+{
+	cur_id = job_resp.getjson("Curtain_Link").subString(job_resp.getjson("Curtain_Link").lastIndexOf("/") + 1,job_resp.getjson("Curtain_Link").length());
+	cur_crm = zoho.crm.getRecordById("Factory_Curtains",cur_id.tolong());
+	c_count = cur_crm.getjson("Curtain_Count");
+	c_stg1 = ifnull(cur_crm.getjson("Curtain_Stage"),"");
+	if(c_stg1 = "New")
+	{
+		c_stg2 = "NE";
+	}
+	else if(c_stg1 = "Ordered")
+	{
+		c_stg2 = "OR";
+	}
+	else if(c_stg1 = "Back Order")
+	{
+		c_stg2 = "BO";
+	}
+	else if(c_stg1 = "Wait CM")
+	{
+		c_stg2 = "CM";
+	}
+	else if(c_stg1 = "Fabric Ready")
+	{
+		c_stg2 = "FR";
+	}
+	else if(c_stg1 = "Started")
+	{
+		c_stg2 = "ST";
+	}
+	else if(c_stg1 = "Done")
+	{
+		c_stg2 = "DO";
+	}
+	else if(c_stg1 = "Out")
+	{
+		c_stg2 = "OU";
+	}
+	else
+	{
+		c_stg2 = "";
+	}
+}
+if(job_resp.getjson("Parts") == true && job_resp.getjson("Parts_Link") != null)
+{
+	par_id = job_resp.getjson("Parts_Link").subString(job_resp.getjson("Parts_Link").lastIndexOf("/") + 1,job_resp.getjson("Parts_Link").length());
+	par_crm = zoho.crm.getRecordById("Factory_Parts",par_id.tolong());
+	p_count = par_crm.getjson("Parts_Count");
+	p_stg1 = ifnull(par_crm.getjson("Parts_Stage"),"");
+	if(p_stg1 = "New")
+	{
+		p_stg2 = "NE";
+	}
+	else if(p_stg1 = "Ordered")
+	{
+		p_stg2 = "OR";
+	}
+	else if(p_stg1 = "Back Order")
+	{
+		p_stg2 = "BO";
+	}
+	else if(p_stg1 = "Wait CM")
+	{
+		p_stg2 = "CM";
+	}
+	else if(p_stg1 = "Fabric Ready")
+	{
+		p_stg2 = "FR";
+	}
+	else if(p_stg1 = "Started")
+	{
+		p_stg2 = "ST";
+	}
+	else if(p_stg1 = "Done")
+	{
+		p_stg2 = "DO";
+	}
+	else if(p_stg1 = "Out")
+	{
+		p_stg2 = "OU";
+	}
+	else
+	{
+		p_stg2 = "";
+	}
+}
+if(job_resp.getjson("Track") == true && job_resp.getjson("Track_Link") != null)
+{
+	info "TRACKS FOUND";
+	tra_id = job_resp.getjson("Track_Link").subString(job_resp.getjson("Track_Link").lastIndexOf("/") + 1,job_resp.getjson("Track_Link").length());
+	tra_crm = zoho.crm.getRecordById("Factory_Tracks",tra_id.tolong());
+	t_count = tra_crm.getjson("Track_Count");
+	t_stg1 = ifnull(tra_crm.getjson("Track_Stage"),"");
+	if(t_stg1 = "New")
+	{
+		t_stg2 = "NE";
+	}
+	else if(t_stg1 = "Ordered")
+	{
+		t_stg2 = "OR";
+	}
+	else if(t_stg1 = "Back Order")
+	{
+		t_stg2 = "BO";
+	}
+	else if(t_stg1 = "Wait CM")
+	{
+		t_stg2 = "CM";
+	}
+	else if(t_stg1 = "Started")
+	{
+		t_stg2 = "ST";
+	}
+	else if(t_stg1 = "Done")
+	{
+		t_stg2 = "DO";
+	}
+	else if(t_stg1 = "Out")
+	{
+		t_stg2 = "OU";
+	}
+	else
+	{
+		t_stg2 = "";
+	}
+}
+info "Roller Count :" + r_count;
+info "Curtain Count :" + c_count;
+info "Parts Count :" + p_count;
+info "Track Count :" + t_count;
+//Getting Part1
+part_01 = "";
+part_01 = "//DELIVERY METHOD: " + Delivery_Method;
+part_01 = part_01 + "\n" + Customer_Type;
+part_01 = part_01 + if(Customer != "","\n" + Customer + " " + Customer_Mobile,"");
+part_01 = part_01 + if(!Customer_Type == "Retail Customer","\n" + Company,"");
+if(Delivery_Method == "CM Install")
+{
+	part_01 = part_01 + if(Access == "New Access Details","\n\n" + "ACCESS@","");
+	part_01 = part_01 + if(Access == "New Access Details" && Access_Name != "","\n" + Access_Name,"");
+	part_01 = part_01 + if(Access == "New Access Details" && Access_Mobile != "","\n" + Access_Mobile,"");
+	part_01 = part_01 + if(Access == "Key","\n\n" + "KEY@","");
+	part_01 = part_01 + if(Access == "Key" && Key_Location != "","\n" + Key_Location,"");
+	part_01 = part_01 + "\n";
+	part_01 = part_01 + if(Remove_Blinds != "","\n" + "//REMOVE: " + Remove_Blinds,"");
+	part_01 = part_01 + if(Tools.size() > 0,"\n" + "//TOOLS REQUIRED: " + Tools,"");
+	part_01 = part_01 + "\n" + "//TAKE PHOTOS";
+}
+//Getting Part2
+part_02 = "";
+part_02 = part_02 + if(Description == "","","\n\n" + "//NOTES: " + Description);
+//Getting Part3
+part_03 = "";
+part_03 = part_03 + "\n\n" + "https://crm.zoho.com.au/crm/org7000171204/tab/Potentials/" + dealid;
+//Getting Part4
+part_04 = "";
+part_04 = part_04 + "\n\n\n" + "//JOB INFO";
+if(Invoice_No != "" || Job_No != "" || Order_No != "")
+{
+	part_04 = part_04 + if(Invoice_No != "","\nInvoice No: " + Invoice_No,"");
+	part_04 = part_04 + if(Job_No != "","\nJob No: " + Job_No,"");
+	part_04 = part_04 + if(Order_No != "","\nOrder No: " + Order_No,"");
+}
+//Getting Part5
+part_05 = "\n";
+if(Roller == true)
+{
+	part_05 = part_05 + "\n\n" + "//ROLLERS";
+	part_05 = part_05 + "\n" + Roller_Stage;
+	if(Roller_Redo_Reason.size() > 0)
+	{
+		part_05 = part_05 + if(Roller_Redo_Reason != "","\n" + "Redo Reason: " + Roller_Redo_Reason,"");
+	}
+	part_05 = part_05 + "\n" + Roller_Notes;
+	part_05 = part_05 + "\n" + Roller_Link;
+	if(r_start_date != "")
+	{
+		part_05 = part_05 + "\n" + "Roller Started: " + r_start_date;
+	}
+}
+if(Curtain == true)
+{
+	part_05 = part_05 + "\n\n" + "//CURTAINS";
+	part_05 = part_05 + "\n" + Curtain_Stage;
+	if(Curtain_Redo_Reason.size() > 0)
+	{
+		part_05 = part_05 + if(Curtain_Redo_Reason != "","\n" + "Redo Reason: " + Curtain_Redo_Reason,"");
+	}
+	part_05 = part_05 + "\n" + Curtain_Notes;
+	part_05 = part_05 + "\n" + Curtain_Link;
+	if(c_start_date != "")
+	{
+		part_05 = part_05 + "\n" + "Curtain Started: " + c_start_date;
+	}
+}
+if(Track == true)
+{
+	part_05 = part_05 + "\n\n" + "//TRACKS";
+	part_05 = part_05 + "\n" + Track_Stage;
+	if(Track_Redo_Reason.size() > 0)
+	{
+		part_05 = part_05 + if(Track_Redo_Reason != "","\n" + "Redo Reason: " + Track_Redo_Reason,"");
+	}
+	part_05 = part_05 + "\n" + Track_Notes;
+	part_05 = part_05 + "\n" + Track_Link;
+	if(t_start_date != "")
+	{
+		part_05 = part_05 + "\n" + "Track Started: " + t_start_date;
+	}
+}
+if(Parts == true)
+{
+	part_05 = part_05 + "\n\n" + "//PARTS";
+	part_05 = part_05 + "\n" + Parts_Stage;
+	if(Parts_Redo_Reason.size() > 0)
+	{
+		part_05 = part_05 + if(Parts_Redo_Reason != "","\n" + "Redo Reason: " + Parts_Redo_Reason,"");
+	}
+	part_05 = part_05 + "\n" + Parts_Notes;
+	part_05 = part_05 + "\n" + Parts_Link;
+	if(p_order_date != "")
+	{
+		part_05 = part_05 + "\n" + "Parts Ordered: " + p_order_date;
+	}
+}
+//Getting Part6
+part_06 = "";
+part_06 = part_06 + if(Manufacture_Start_Date == "","","\n\n//Manufacture Started: " + Manufacture_Start_Date);
+//Getting Part7 (part_address)
+part_address = "";
+if(Delivery_Method == "Deliver" && Job_Address_Details != "Fill From Customer" || Delivery_Method = "CM Install")
+{
+	part_address = Job_Address + " " + Job_State + " " + Job_Postcode;
+}
+else if(Delivery_Method == "Deliver" && Job_Address_Details == "Fill From Customer")
+{
+	part_address = Contact_Address + " " + Contact_State + " " + Contact_Postcode;
+}
+else if(Delivery_Method == "Pick Up")
+{
+	part_address = "Pick Up";
+}
+//Getting Parta
+//part_a = part_a + if(Stage == "Redo Booked","REDO","");
+part_b = "";
+if(r_count > 0)
+{
+	part_b = part_b + if(Roller == true,if(part_b == "","R" + r_count,"+R" + r_count),"");
+	part_b = part_b + "/" + r_stg2;
+}
+if(c_count > 0)
+{
+	part_b = part_b + if(Curtain == true,if(part_b == "","C" + c_count,"+C" + c_count),"");
+	part_b = part_b + "/" + c_stg2;
+}
+if(t_count > 0)
+{
+	part_b = part_b + if(Track == true,if(part_b == "","T" + t_count,"+T" + t_count),"");
+	part_b = part_b + "/" + t_stg2;
+}
+if(p_count > 0)
+{
+	part_b = part_b + if(Parts == true,if(part_b == "","P" + p_count,"+P" + p_count),"");
+	part_b = part_b + "/" + p_stg2;
+}
+part_b = "(" + part_b + ") " + Job_Code + " - ";
+//Getting Partc
+part_c = "";
+//part_c = part_c + if(Customer != "",Customer + " " + Customer_Mobile + " ","");
+part_c = part_c + if(Customer != "",Customer + " ","");
+if(Delivery_Method == "CM Install")
+{
+	part_c = part_c + if(Access == "New Access Details","ACCESS@ ","");
+	part_c = part_c + if(Access == "Key","KEY@ ","");
+	part_c = part_c + if(Remove_Blinds != "","REMOVE@ ","");
+	part_c = part_c + if(Tools.size() > 0,"TOOLS@ ","");
+	part_c = part_c + "PHOTO@ ";
+}
+part_c = part_c + "//" + Delivery_Method;
+srt_start_time = "";
+srt_start_time = Manufacture_Booked;
+for each  rec in task_resp
+{
+	event_id = rec.get("id");
+	desc_orig_desc = ifnull(rec.get("Description"),"");
+	desc_orig_title = ifnull(rec.get("Event_Title"),"");
+	if(!(desc_orig_title.startsWithIgnoreCase("! NOT BOOKED REDO") || desc_orig_title.startsWithIgnoreCase("REDO")))
+	{
+		part_a = "";
+		if(Stage == "Redo Booked")
+		{
+			//if stage is redo keep the old value
+			info desc_orig_title;
+			info "line220";
+			part_a = "";
+			part_a = desc_orig_title.subString(0,desc_orig_title.find("("));
+			part_a = part_a.replaceFirst("! NOT BOOKED ","");
+			part_a = TRIM(part_a);
+			if(Booked_with_Customer != "Yes")
+			{
+				part_a = "! NOT BOOKED " + part_a;
+			}
+		}
+		else
+		{
+			if((Stage == "Delivery Booked" || Stage == "Install Booked") && Booked_with_Customer != "Yes")
+			{
+				part_a = part_a + "! NOT BOOKED ";
+			}
+			part_a = part_a + if(Stage == "Hold (Paid)","HOLD","");
+			part_a = part_a + if(Stage == "Manufacture (Paid)","MAKE","");
+			part_a = part_a + if(Stage == "CM Booked (Paid)","CM","");
+			part_a = part_a + if(Stage == "Delivery Booked","DELIVER","");
+			part_a = part_a + if(Stage == "Pick Up Booked","PICK UP","");
+			part_a = part_a + if(Stage == "Install Booked","INSTALL","");
+		}
+	}
+	else if(desc_orig_title.startsWithIgnoreCase("! NOT BOOKED REDO") || desc_orig_title.startsWithIgnoreCase("REDO"))
+	{
+		info desc_orig_title;
+		info "line248";
+		part_a = "";
+		part_a = "";
+		part_a = desc_orig_title.subString(0,desc_orig_title.find("("));
+		part_a = part_a.replaceFirst("! NOT BOOKED ","");
+		part_a = TRIM(part_a);
+		if((Stage == "Delivery Booked" || Stage == "Install Booked" || Stage == "Pick Up Booked" || Stage == "Redo Booked") && Booked_with_Customer != "Yes")
+		{
+			part_a = "! NOT BOOKED " + part_a;
+		}
+	}
+	Event_Title = part_a + part_b + part_c;
+	Event_Description = part_01 + part_02 + part_03 + part_04 + part_05 + part_06;
+	mp = Map();
+	mp.put("Event_Title",Event_Title);
+	mp.put("Venue",part_address);
+	mp.put("Description",Event_Description);
+	eveupdate = zoho.crm.updateRecord("Events",event_id.tolong(),mp);
+	info eveupdate;
+}
+return "";
